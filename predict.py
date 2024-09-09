@@ -2,9 +2,9 @@ import argparse
 import torch
 from torchvision import models
 import json
-from predict_utils import load_checkpoint, predict
+from train_and_predict_utils import load_checkpoint, predict
 
-def main():
+def main(): # Example code to run: python predict.py 'flowers/test/1/image_06743.jpg' 'checkpoint/checkpoint.pth' --category_names cat_to_name.json --gpu
     parser = argparse.ArgumentParser(description='Predict flower name from an image along with the probability of that name')
     parser.add_argument('input', type=str, help='Path to input image')
     parser.add_argument('checkpoint', type=str, help='Path to checkpoint')
@@ -28,8 +28,8 @@ def main():
             cat_to_name = json.load(f)
         classes = [cat_to_name[str(cls)] for cls in classes]
     
-    print(f"Predicted Classes: {classes}")
-    print(f"Class Probabilities: {probs}")
+    for cls, prob in zip(classes, probs):
+        print(f"Class: {cls:<20} Probability: {prob * 100:>6.1f}%")
 
 if __name__ == '__main__':
     main()
