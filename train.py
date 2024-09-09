@@ -3,6 +3,7 @@ import torch
 from torch import nn, optim
 from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
+from torchvision.models import VGG16_Weights
 from data_utils import load_data
 from train_utils import train_model, save_checkpoint
 
@@ -26,7 +27,8 @@ def main():
     
     trainloader, validloader, _ = load_data(args.data_dir)
     
-    model = getattr(models, args.arch)(pretrained=True)
+    weights = VGG16_Weights.IMAGENET1K_V1 if args.arch == 'vgg16' else None
+    model = getattr(models, args.arch)(weights=weights)
     for param in model.parameters():
         param.requires_grad = False
     

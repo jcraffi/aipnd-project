@@ -1,17 +1,21 @@
 import torch
+from torch.cuda.amp import GradScaler, autocast
 
 def train_model(model, trainloader, validloader, criterion, optimizer, device, epochs):
     for epoch in range(epochs):
-        model.train()
         running_loss = 0
+        model.train()
         for images, labels in trainloader:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
-            output = model(images)
-            loss = criterion(output, labels)
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
+
+            with autocast():
+                output = model(images)
+                loss = criterion(output, labels)
+        
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         
         valid_loss = 0
         accuracy = 0
