@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 from data_utils import load_data
 from train_utils import train_model, save_checkpoint
 
+# Example code to run: python train.py 'flowers' --save_dir checkpoint.pth --arch vgg16 --epochs 10 --gpu
+
 def main():
     parser = argparse.ArgumentParser(description='Train a new network on a dataset and save the model as a checkpoint')
     parser.add_argument('data_dir', type=str, help='Directory of the dataset')

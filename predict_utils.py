@@ -1,3 +1,5 @@
+import torch
+
 def load_checkpoint(filepath):
     checkpoint = torch.load(filepath)
     model = getattr(models, checkpoint['arch'])(pretrained=True)

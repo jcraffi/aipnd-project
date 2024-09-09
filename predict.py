@@ -1,6 +1,7 @@
 import argparse
 import torch
 from torchvision import models
+import json
 from predict_utils import load_checkpoint, predict
 
 def main():

@@ -1,7 +1,6 @@
-import torch
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
-import json
+from PIL import Image
 
 def load_data(data_dir):
     train_dir = f'{data_dir}/train'
@@ -41,9 +40,6 @@ def load_data(data_dir):
     return trainloader, validloader, testloader
 
 def process_image(image_path):
-    from PIL import Image
-    import numpy as np
-    
     image = Image.open(image_path)
     preprocess = transforms.Compose([
         transforms.Resize(256),
