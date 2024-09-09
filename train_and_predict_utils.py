@@ -98,6 +98,28 @@ def train_model(model, trainloader, validloader, criterion, optimizer, device, e
               f"Validation Loss: {valid_loss/len(validloader):.3f}.. "
               f"Validation Accuracy: {accuracy/len(validloader):.3f}")
     
+def test_model(model, test_loader, criterion, device):
+    # Test the network on the test data
+    model.eval()
+    test_loss = 0
+    accuracy = 0
+
+    # Disable gradient calculation for testing
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            # Forward pass
+            log_ps = model(inputs)
+            test_loss += criterion(log_ps, labels).item()
+            
+            # Calculate accuracy
+            ps = torch.exp(log_ps)
+            top_p, top_class = ps.topk(1, dim=1)
+            equals = top_class == labels.view(*top_class.shape)
+            accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
+        return test_loss, accuracy
+
 def save_checkpoint(model, save_dir, arch, hidden_units, learning_rate, epochs):
     checkpoint = {
         'arch': arch,
