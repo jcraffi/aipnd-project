@@ -14,7 +14,7 @@ def main(): # Example code to run: python train.py 'flowers' --save_dir checkpoi
     parser.add_argument('--save_dir', type=str, default='.', help='Directory to save checkpoints')
     parser.add_argument('--arch', type=str, default='vgg13', help='Model architecture')
     parser.add_argument('--learning_rate', type=float, default=0.01, help='Learning rate')
-    parser.add_argument('--hidden_units', type=int, default=512, help='Number of hidden units')
+    parser.add_argument('--hidden_units', type=int, default=2048, help='Number of hidden units')
     parser.add_argument('--epochs', type=int, default=20, help='Number of epochs')
     parser.add_argument('--gpu', action='store_true', help='Use GPU for training')
     # Add argument to subset the data for faster training on small GPUs and CPUs
@@ -56,9 +56,7 @@ def main(): # Example code to run: python train.py 'flowers' --save_dir checkpoi
 
     # Define the classifier
     model.classifier = nn.Sequential(
-        nn.Linear(in_features, args.hidden_units),
-        nn.ReLU(),
-        nn.Dropout(0.5),
+        nn.Linear(in_features, args.hidden_units), nn.ReLU(), nn.Dropout(0.5),
         nn.Linear(args.hidden_units, 102),
         nn.LogSoftmax(dim=1)
     )

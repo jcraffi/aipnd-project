@@ -12,7 +12,7 @@ model_info = {
         'optimizer': lambda model, lr: optim.Adam(model.classifier.parameters(), lr=lr)
     },
     'vgg16': {
-        'weights': VGG16_Weights.DEFAULT,
+        'weights': VGG16_Weights.IMAGENET1K_V1,
         'in_features': lambda model: model.classifier[0].in_features,
         'criterion': nn.NLLLoss,
         'optimizer': lambda model, lr: optim.Adam(model.classifier.parameters(), lr=lr)
