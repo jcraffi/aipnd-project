@@ -66,12 +66,16 @@ def train_model(model, trainloader, validloader, criterion, optimizer, device, e
     for epoch in range(epochs):
         running_loss = 0
         model.train()
-        scaler = torch.amp.GradScaler('cuda')
+        scaler = torch.amp.GradScaler(enabled=(device.type == 'cuda'))
         for images, labels in trainloader:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
 
-            with autocast('cuda'):
+            if device.type == 'cuda':
+                with torch.amp.autocast(device_type=device.type):
+                    output = model(images)
+                    loss = criterion(output, labels)
+            else:
                 output = model(images)
                 loss = criterion(output, labels)
         
@@ -120,20 +124,21 @@ def test_model(model, test_loader, criterion, device):
             accuracy += torch.mean(equals.type(torch.FloatTensor)).item()
         return test_loss, accuracy
 
-def save_checkpoint(model, save_dir, arch, hidden_units, learning_rate, epochs):
+def save_checkpoint(model, save_dir, arch, class_to_idx, hidden_units, learning_rate, epochs):
     checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'class_to_idx': class_to_idx,
         'arch': arch,
         'hidden_units': hidden_units,
         'learning_rate': learning_rate,
-        'epochs': epochs,
-        'state_dict': model.state_dict()
+        'epochs': epochs
     }
 
     torch.save(checkpoint, f'{save_dir}/checkpoint.pth')
 
 def load_checkpoint(filepath):
-    checkpoint = torch.load(filepath)
-    model = getattr(models, checkpoint['arch'])(weights=model_info[checkpoint['arch']])
+    checkpoint = torch.load(filepath, weights_only=True)
+    model = getattr(models, checkpoint['arch'])(weights=model_info[checkpoint['arch']]['weights'])
 
     # Find the first Linear layer in the classifier
     in_features = None
@@ -152,8 +157,10 @@ def load_checkpoint(filepath):
         nn.Linear(checkpoint['hidden_units'], 102),
         nn.LogSoftmax(dim=1)
     )
-    model.load_state_dict(checkpoint['state_dict'])
-    return model
+    model.load_state_dict(checkpoint['model_state_dict'])
+    class_to_idx = checkpoint['class_to_idx']
+
+    return model, class_to_idx
 
 def process_image(image_path):
     # Define the transformations

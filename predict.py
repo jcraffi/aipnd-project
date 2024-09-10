@@ -18,17 +18,23 @@ def main(): # Example code to run: python predict.py 'flowers/test/1/image_06743
                           else "mps" if args.gpu and torch.backends.mps.is_available()
                           else "cpu")
     
-    model = load_checkpoint(args.checkpoint)
+    model, class_to_idx = load_checkpoint(args.checkpoint)
     model.to(device)
     
     probs, classes = predict(args.input, model, device, args.top_k)
+
+    # Reverse the class_to_idx dictionary to get idx_to_class
+    idx_to_class = {v: k for k, v in class_to_idx.items()}
+    
+    # Get the class labels from the predicted indices
+    class_labels = [idx_to_class[idx] for idx in classes]
     
     if args.category_names:
         with open(args.category_names, 'r') as f:
-            cat_to_name = json.load(f)
-        classes = [cat_to_name[str(cls)] for cls in classes]
+            cat_to_name = json.load(f, strict=False)
+        class_labels = [cat_to_name.get(str(cls), "Unknown") for cls in class_labels]
     
-    for cls, prob in zip(classes, probs):
+    for cls, prob in zip(class_labels, probs):
         print(f"Class: {cls:<20} Probability: {prob * 100:>6.1f}%")
 
 if __name__ == '__main__':

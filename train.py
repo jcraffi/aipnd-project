@@ -71,7 +71,15 @@ def main(): # Example code to run: python train.py 'flowers' --save_dir checkpoi
     
     train_model(model, train_loader, valid_loader, criterion, optimizer, device, args.epochs)
 
-    save_checkpoint(model, args.save_dir, args.arch, args.hidden_units, args.learning_rate, args.epochs)
+    # Access the original dataset to get class_to_idx
+    if isinstance(train_loader.dataset, torch.utils.data.Subset):
+        original_dataset = train_loader.dataset.dataset
+    else:
+        original_dataset = train_loader.dataset
+
+    class_to_idx = original_dataset.class_to_idx
+
+    save_checkpoint(model, args.save_dir, args.arch, class_to_idx, args.hidden_units, args.learning_rate, args.epochs)
 
 if __name__ == '__main__':
     main()
