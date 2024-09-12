@@ -1,10 +1,8 @@
 import argparse
 import torch
-from torchvision import models
-import json
-from train_and_predict_utils import load_checkpoint, predict, display_predictions
+from train_and_predict_utils import load_checkpoint, predict
 
-def main(): # Example code to run: python predict.py 'flowers/test/1/image_06743.jpg' 'checkpoint/checkpoint.pth' --category_names cat_to_name.json --gpu
+def main(): # Example code to run: python predict.py 'flowers/test/1/image_06743.jpg' 'checkpoint' --category_names cat_to_name.json --gpu
     parser = argparse.ArgumentParser(description='Predict flower name from an image along with the probability of that name')
     parser.add_argument('input', type=str, help='Path to input image')
     parser.add_argument('checkpoint', type=str, help='Path to checkpoint')
@@ -19,13 +17,10 @@ def main(): # Example code to run: python predict.py 'flowers/test/1/image_06743
                           else "cpu")
     
     #load the model
-    model, optimizer, class_to_idx = load_checkpoint(args.checkpoint)
+    model, optimizer = load_checkpoint(args.checkpoint)
     
     # Get the top K probabilities and indices
-    topk_probabilities, topk_indices = predict(args.input, model, device, args.top_k)
+    predict(args.input, model, device, args.top_k)
 
-    # Get the class labels from the indices
-    display_predictions(model, topk_probabilities, topk_indices, args.category_names, args.top_k)
-
- if __name__ == '__main__':
+if __name__ == '__main__':
     main()

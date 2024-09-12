@@ -2,11 +2,13 @@ import torch
 from torchvision import datasets, models, transforms
 from torch.utils.data import DataLoader, Subset
 from torch.cuda.amp import GradScaler, autocast
+from torch import optim
 import torch.nn as nn
 from PIL import Image, ImageOps
 import numpy as np
 import random
 from supported_models import model_info
+import json
 
 # Create a function to load the data
 def load_data(data_dir, subset_percentage=None):
@@ -61,21 +63,30 @@ def load_data(data_dir, subset_percentage=None):
     return train_loader, valid_loader, test_loader, class_to_idx, cat_to_name
 
 # Define the model, criterion, and optimizer based on the model name and model info
-def create_model(modal_name, lr, hidden_units):
+def create_model(model_name, device, class_to_idx, cat_to_name, lr, hidden_units):
     model = getattr(models, model_name)(weights=model_info[model_name]['weights'])
     model.class_to_idx = class_to_idx
     model.cat_to_name = cat_to_name
 
-    # Freeze the feature extractor parameters
-    for param in model.features.parameters():
-        param.requires_grad = False
-
-    # Define the classifier
-    model.classifier = nn.Sequential(
-        nn.Linear(model_info[model_name]['in_features'](model), hidden_units), nn.ReLU(), nn.BatchNorm1d(2048), nn.Dropout(0.2),
-        nn.Linear(hidden_units, 102), nn.ReLU(), nn.BatchNorm1d(1024), nn.Dropout(0.5),
-        nn.LogSoftmax(dim=1)
-    )
+    # Freeze the feature extractor parameters and define the classifier
+    if hasattr(model, 'features'):
+        for param in model.features.parameters():
+            param.requires_grad = False
+        in_features = model_info[model_name]['in_features'](model)
+        model.classifier = nn.Sequential(
+            nn.Linear(in_features, hidden_units), nn.ReLU(), nn.BatchNorm1d(hidden_units), nn.Dropout(0.2),
+            nn.Linear(hidden_units, 102), nn.ReLU(), nn.BatchNorm1d(102), nn.Dropout(0.5),
+            nn.LogSoftmax(dim=1)
+        )
+    else:
+        for param in model.parameters():
+            param.requires_grad = False
+        in_features = model.fc.in_features
+        model.fc = nn.Sequential(
+            nn.Linear(in_features, hidden_units), nn.ReLU(), nn.BatchNorm1d(hidden_units), nn.Dropout(0.2),
+            nn.Linear(hidden_units, 102), nn.ReLU(), nn.BatchNorm1d(102), nn.Dropout(0.5),
+            nn.LogSoftmax(dim=1)
+        )
     model.to(device)
 
     # Initialize weights
@@ -174,16 +185,22 @@ def test_model(model, criterion, test_loader, device):
     return test_loss, accuracy
 
 # Save the model checkpoint
-def save_checkpoint(model_name, model, optimizer, epochs, save_dir):
+def save_checkpoint(model_name, model, optimizer, epochs, learning_rate, hidden_units, save_dir):
+    # Determine the classifier attribute name
+    classifier_attr = 'classifier' if hasattr(model, 'classifier') else 'fc'
+    
     # Create a dictionary to save the model state and additional information
     checkpoint = {
         'model_name': model_name,
-        'classifier': model.classifier,
+        'classifier_attr': classifier_attr,
+        'classifier': getattr(model, classifier_attr),
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'class_to_idx': model.class_to_idx,
+        'cat_to_name': model.cat_to_name,
         'epochs': epochs,
-        'learning_rate': learning_rate
+        'learning_rate': learning_rate,
+         'hidden_units': hidden_units
     }
 
     # Save the checkpoint
@@ -192,30 +209,39 @@ def save_checkpoint(model_name, model, optimizer, epochs, save_dir):
     print("Model and additional information saved successfully.")
 
 # Load the model checkpoint
-def load_checkpoint(save_dir):
-    checkpoint = torch.load(f'{save_dir}/checkpoint.pth')
+def load_checkpoint(save_dir, device):
+    checkpoint = torch.load(f'{save_dir}/checkpoint.pth', map_location=device)
+    model_name = checkpoint['model_name']
+    hidden_units = checkpoint['hidden_units']
+    classifier_attr = checkpoint['classifier_attr']
 
-    model = getattr(models, checkpoint['model_name'])(weights=model_info[checkpoint['model_name']]['weights'])
-    model.classifier = checkpoint['classifier']
+    # Initialize the model architecture
+    model = getattr(models, model_name)(weights=model_info[model_name]['weights'])
+    
+    # Load the classifier from the checkpoint
+    setattr(model, classifier_attr, checkpoint['classifier'])
+    
+    # Load the saved state dictionary
     model.load_state_dict(checkpoint['model_state_dict'])
     model.class_to_idx = checkpoint['class_to_idx']
+    model.cat_to_name = checkpoint['cat_to_name']
 
-    optimizer = optim.Adam(model.classifier.parameters(), checkpoint['learning_rate'])
-    class_to_idx = checkpoint['class_to_idx']
-    
+    # Freeze the parameters
     for param in model.parameters():
         param.requires_grad = False
-    ###
-    # Load the model
 
-    # Load the optimizer state
+    # Initialize the optimizer and load its state dictionary
+    optimizer = optim.Adam(getattr(model, classifier_attr).parameters(), lr=checkpoint['learning_rate'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    # Set the model to evaluation mode and it to the device
+    model.eval().to(device)
 
     # Print confirmation message
     print("Model and additional information loaded successfully.")
     
-    # Return the model, optimizer, and class_to_idx
-    return model, optimizer, class_to_idx
+    # Return the model and optimizer
+    return model, optimizer
 
 def process_image(image_path):
     image = Image.open(image_path)
@@ -245,20 +271,17 @@ def predict(image_path, model, device, topk=5):
     
     # Get the topk probabilities and indices
     topk_probabilities, topk_indices = probabilities.topk(topk)
-    ###
+
     # Convert to lists
     topk_probabilities = topk_probabilities.tolist()
     topk_indices = topk_indices.tolist()
-    ###
-    return topk_probabilities, topk_indices
-
-def display_predictions(model, topk_probabilities, topk_indices, class_names, topk=5):
+    
     # Map indices to class labels
     idx_to_class = {val: key for key, val in model.class_to_idx.items()}
     top_classes = [idx_to_class[idx] for idx in topk_indices]
     
     # Get the class names
-    topk_class_names = [class_names[str(cls)] for cls in top_classes]
+    topk_class_names = [model.cat_to_name[str(cls)] for cls in top_classes]
 
     # Print the top K predictions
     for cls, prob in zip(topk_class_names, topk_probabilities):

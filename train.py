@@ -8,7 +8,7 @@ from os import makedirs
 from supported_models import model_info
 
 
-def main(): # Example code to run: python train.py 'flowers' --save_dir checkpoint --arch vgg13 --epochs 10 --gpu --subset .05 --learning_rate 0.001
+def main(): # Example code to run: python train.py 'flowers' --save_dir checkpoint --arch vgg13 --epochs 10 --gpu --subset .1 --learning_rate 0.001
     parser = argparse.ArgumentParser(description='Train a new network on a dataset and save the model as a checkpoint')
     parser.add_argument('data_dir', type=str, help='Directory of the dataset')
     parser.add_argument('--save_dir', type=str, default='.', help='Directory to save checkpoints')
@@ -39,16 +39,16 @@ def main(): # Example code to run: python train.py 'flowers' --save_dir checkpoi
     train_loader, valid_loader, test_loader, class_to_idx, cat_to_name = load_data(args.data_dir, args.subset)
     
     # Get the model information based on the architecture
-    model, criterion, optimizer = create_model(args.arch, args.learning_rate, args.hidden_units)
+    model, criterion, optimizer = create_model(args.arch, device, class_to_idx, cat_to_name, args.learning_rate, args.hidden_units)
 
     # Load the model with the corresponding weights
     model, train_losses, valid_losses = train_model(model, criterion, optimizer, train_loader, valid_loader, args.epochs, device)
 
     # Test the model
     test_loss, accuracy = test_model(model, criterion, test_loader, device)
-    
+
     # Save the model as a checkpoint
-    save_checkpoint(model, args.save_dir, args.arch, class_to_idx, args.hidden_units, args.learning_rate, args.epochs)
+    save_checkpoint(args.arch, model, optimizer, args.epochs, args.learning_rate, args.hidden_units, args.save_dir)
 
 if __name__ == '__main__':
     main()

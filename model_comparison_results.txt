@@ -1,0 +1,45 @@
+Model: vgg13
+Total Training Time: 25.37 seconds
+Test Loss: 5.036
+Test Accuracy: 10.34%
+
+Model: vgg16
+Total Training Time: 30.93 seconds
+Test Loss: 4.874
+Test Accuracy: 8.98%
+
+Model: densenet121
+Total Training Time: 24.17 seconds
+Test Loss: 4.383
+Test Accuracy: 11.39%
+
+Model: densenet161
+Total Training Time: 39.46 seconds
+Test Loss: 4.449
+Test Accuracy: 7.74%
+
+Model: resnet18
+Total Training Time: 12.93 seconds
+Test Loss: 4.557
+Test Accuracy: 10.18%
+
+Model: resnet50
+Total Training Time: 19.77 seconds
+Test Loss: 4.289
+Test Accuracy: 15.50%
+
+Model: inception_v3
+Total Training Time: 5.00 seconds
+Test Loss: None
+Test Accuracy: None
+
+Model: efficientnet_b0
+Total Training Time: 15.14 seconds
+Test Loss: 4.175
+Test Accuracy: 14.51%
+
+Model: mobilenet_v2
+Total Training Time: 13.29 seconds
+Test Loss: 4.230
+Test Accuracy: 15.79%
+

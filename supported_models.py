@@ -41,12 +41,6 @@ model_info = {
         'criterion': nn.CrossEntropyLoss,
         'optimizer': lambda model, lr: optim.Adam(model.fc.parameters(), lr=lr)
     },
-    'inception_v3': {
-        'weights': Inception_V3_Weights.DEFAULT,
-        'in_features': lambda model: model.fc.in_features,
-        'criterion': nn.CrossEntropyLoss,
-        'optimizer': lambda model, lr: optim.Adam(model.fc.parameters(), lr=lr)
-    },
     'efficientnet_b0': {
         'weights': EfficientNet_B0_Weights.DEFAULT,
         'in_features': lambda model: model.classifier[1].in_features,
