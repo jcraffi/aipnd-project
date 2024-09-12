@@ -32,7 +32,7 @@ def run_training_script(args, model_name):
 
     return model_name, total_time, test_loss, test_accuracy
 
-def main():
+def main(): # Example code to run: python model_comparison.py 'flowers' --save_dir checkpoint --gpu --subset .1 --learning_rate 0.001
     parser = argparse.ArgumentParser(description='Run training for each model and output results')
     parser.add_argument('data_dir', type=str, help='Directory of the dataset')
     parser.add_argument('--save_dir', type=str, default='.', help='Directory to save checkpoints')
